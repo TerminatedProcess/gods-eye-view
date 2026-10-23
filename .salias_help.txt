@@ -1,0 +1,13 @@
+APP
+  install           npm install + setup doctor
+  build             Production build
+  run               Dev server on :4173 (dev-fresh.sh)
+  preview           Serve the production build
+
+CHECKS
+  unit              Unit tests (npm test)
+  track             Tracking regression (dev server must be up)
+  checks            Format, boundary and i18n checks
+
+GIT
+  gitupdate         FF main from upstream, rebase mryan on top, push

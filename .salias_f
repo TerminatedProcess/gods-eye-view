@@ -1,0 +1,61 @@
+# God's Eye View - Project aliases and functions
+# All commands defined here, sourced by .salias
+# Run 'help' to see all available commands
+
+# ── Help ──
+# Relative path: .salias_f is always sourced with the project dir as PWD.
+function help
+    clear
+    cat ./.salias_help.txt
+end
+
+# ── App ──
+alias install='npm install; and npm run doctor'
+alias build='npm run build'
+alias run='./scripts/dev-fresh.sh'
+alias preview='npm run preview'
+
+# ── Checks ──
+alias unit='npm test'
+alias track='npm run test:track'
+alias checks='npm run format:check; and npm run check:boundaries; and npm run i18n'
+
+# ── Git (fork: main mirrors upstream, work on mryan) ──
+function gitupdate --description "Sync fork from upstream: ff main, rebase mryan on top"
+    set -l current (git branch --show-current)
+
+    # Checking out main with a dirty tree could carry stray edits onto the mirror.
+    if not git diff --quiet; or not git diff --cached --quiet
+        echo "gitupdate: working tree dirty -- commit or stash on mryan first."
+        return 1
+    end
+
+    echo "gitupdate: fetching upstream..."
+    git fetch upstream; or return 1
+
+    echo "gitupdate: fast-forwarding main (mirror of upstream)..."
+    git checkout main; or return 1
+    if not git merge upstream/main --ff-only
+        echo "gitupdate: ff-only refused -- main has drifted from upstream."
+        echo "           Something was committed to main that belongs on mryan."
+        echo "           Recover: git branch -f mryan main; git reset --hard upstream/main"
+        git checkout $current
+        return 1
+    end
+    git push origin main; or return 1
+
+    echo "gitupdate: rebasing mryan onto main..."
+    git checkout mryan; or return 1
+    if not git rebase main
+        echo "gitupdate: rebase stopped on a conflict -- you are mid-rebase on mryan."
+        echo "           Resolve, then: git rebase --continue"
+        echo "           and finally:   git push origin mryan --force-with-lease"
+        return 1
+    end
+    # Rebase rewrites mryan's history, so the push must overwrite the remote.
+    # --force-with-lease (never plain --force) aborts if the remote moved.
+    git push origin mryan --force-with-lease; or return 1
+
+    git checkout $current
+    echo "gitupdate: done -- main mirrors upstream, mryan rebased on top."
+end
